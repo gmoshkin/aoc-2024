@@ -184,12 +184,80 @@ func mark_match(l_start, c_start, l_end, c_end int) {
 
     li, ci := l_start, c_start
     for li >= 0 && li <= l_end && ci >= 0 && ci <= c_end {
-        mask[li * row_size + ci] = true
+        mark_cell(li, ci)
         li += l_step
         ci += c_step
     }
 }
 
+func mark_cell(li, ci int) {
+    mask[li * row_size + ci] = true
+}
+
 func is_marked(li, ci int) bool {
     return mask[li * row_size + ci]
+}
+
+func (ThisStructsMethodsAreSolutionFunctions) Solution4_2() {
+    scanner := bufio.NewScanner(os.Stdin)
+
+    var lines []string
+    line_length := 0
+    for scanner.Scan() {
+        line := scanner.Text()
+        if line_length == 0 {
+            line_length = len(line)
+        }
+        if line_length != len(line) {
+            panic("all lines must be the same length")
+        }
+
+        lines = append(lines, line)
+    }
+
+    row_size = line_length
+    mask_size := len(lines) * line_length
+    mask = make([]bool, mask_size, mask_size)
+    for i := range mask {
+        mask[i] = false
+    }
+
+    total := 0
+    for line_i := range lines[:len(lines)-2] {
+        for column_i := range line_length-2 {
+            if matches_x_mas(lines, line_i, column_i) {
+                total += 1
+            }
+        }
+    }
+
+    // debug. I was going to delete this before committing, but decided to keep it...
+    for line_i, line := range lines {
+        for column_i, c := range line {
+            if is_marked(line_i, column_i) {
+                fmt.Printf("\x1b[31m%c\x1b[0m", c)
+            } else {
+                fmt.Printf("%c", c)
+            }
+        }
+        fmt.Println()
+    }
+
+    fmt.Println("result:", total)
+}
+
+func matches_x_mas(lines []string, l, c int) bool {
+    if lines[l + 1][c + 1] != 'A' { return false }
+    if !((lines[l][c] == 'M' && lines[l + 2][c + 2] == 'S') ||
+         (lines[l][c] == 'S' && lines[l + 2][c + 2] == 'M')) { return false }
+    if !((lines[l][c + 2] == 'M' && lines[l + 2][c] == 'S') ||
+         (lines[l][c + 2] == 'S' && lines[l + 2][c] == 'M')) { return false }
+
+    mark_cell(l, c)
+    mark_cell(l+1, c+1)
+    mark_cell(l+2, c+2)
+    mark_cell(l, c+2)
+    mark_cell(l+2, c)
+
+    return true
 }

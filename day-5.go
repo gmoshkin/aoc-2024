@@ -39,6 +39,45 @@ func (ThisStructsMethodsAreSolutionFunctions) Solution5_1() {
     fmt.Printf("result: %d\n", result)
 }
 
+func (ThisStructsMethodsAreSolutionFunctions) Solution5_2() {
+    info := read_page_number_updates(os.Stdin)
+    result := 0
+
+    for _, updates_record := range info.updates_to_be {
+        tweaked_record := false
+
+        i := 0
+    CheckUpdateRecord:
+        for i < len(updates_record) {
+            current := updates_record[i]
+            head := updates_record[:i]
+            must_go_after := info.must_go_after[current]
+            for j, before := range head {
+                if !slices.Contains(must_go_after, before) { continue }
+
+                tweaked_record = true
+
+                // Swap the pair that violates the rules
+                updates_record[i], updates_record[j] = updates_record[j], updates_record[i]
+                // Next iteration starts at the same number we were looking at
+                // but it's now at a new position
+                i = j
+                continue CheckUpdateRecord
+            }
+
+            i += 1
+        }
+
+        if tweaked_record {
+            inspect_update_rule(info, updates_record)
+            n_numbers := len(updates_record)
+            result += updates_record[n_numbers / 2]
+        }
+    }
+
+    fmt.Printf("result: %d\n", result)
+}
+
 type PageNumberUpdates struct {
     // A mapping from int to array of int
     must_go_after map[int][]int
@@ -132,4 +171,40 @@ func read_page_number_updates(reader io.Reader) PageNumberUpdates {
         must_go_after: must_go_after,
         updates_to_be: updates_to_be,
     }
+}
+
+var color_code = [...]string {
+    "31", "32", "33", "34", "35", "36",
+    "31;1", "32;1", "33;1", "34;1", "35;1", "36;1",
+    "41", "42", "43", "44", "45", "46",
+    "41;1", "42;1", "43;1", "44;1", "45;1", "46;1",
+}
+func inspect_update_rule(info PageNumberUpdates, updates_record []int) {
+    color_of_number := make(map[int]string)
+
+    for i, number := range updates_record {
+        color_of_number[number] = color_code[i]
+    }
+
+    for _, number := range updates_record {
+        key_color := color_of_number[number]
+        fmt.Printf("\x1b[%sm%d\x1b[0m <", key_color, number)
+        for _, number_after := range info.must_go_after[number] {
+            color_after, found := color_of_number[number_after]
+            if !found { continue }
+            fmt.Printf(" \x1b[%sm%d\x1b[0m", color_after, number_after)
+        }
+        fmt.Println()
+    }
+
+    for _, number := range updates_record {
+        key_color := color_of_number[number]
+        fmt.Printf("\x1b[%sm%d\x1b[0m ", key_color, number)
+    }
+    fmt.Println()
+    fmt.Println()
+}
+
+func sort_update_record_topologically(info PageNumberUpdates, updates_record []int) {
+
 }

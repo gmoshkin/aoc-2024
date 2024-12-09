@@ -8,21 +8,56 @@ import (
     "slices"
     "fmt"
     "time"
+    "io"
 )
 
 func (ThisStructsMethodsAreSolutionFunctions) Solution5_1() {
+    info := read_page_number_updates(os.Stdin)
+    result := 0
+
+    for _, updates_record := range info.updates_to_be {
+        valid_update_record := true
+
+    CheckUpdateRecord:
+        for i, current := range updates_record {
+            updates_so_far := updates_record[:i]
+            must_go_after := info.must_go_after[current]
+            for _, before := range updates_so_far {
+                if slices.Contains(must_go_after, before) {
+                    valid_update_record = false
+                    break CheckUpdateRecord
+                }
+            }
+        }
+
+        if valid_update_record {
+            n_updates := len(updates_record)
+            result += updates_record[n_updates / 2]
+        }
+    }
+
+    fmt.Printf("result: %d\n", result)
+}
+
+type PageNumberUpdates struct {
+    // A mapping from int to array of int
+    must_go_after map[int][]int
+    // Array of arrays of int
+    updates_to_be [][]int
+}
+
+func read_page_number_updates(reader io.Reader) PageNumberUpdates {
     scanner := bufio.NewScanner(os.Stdin)
 
     // Key goes before value
-    dependencies := make(map[int][]int)
+    must_go_after := make(map[int][]int)
+    var updates_to_be [][]int
 
     const (
         ParsingRules = iota
         ParsingUpdates
     )
     state := ParsingRules
-
-    result := 0
 
     t0 := time.Now()
 
@@ -32,7 +67,7 @@ func (ThisStructsMethodsAreSolutionFunctions) Solution5_1() {
 
         line := scanner.Text()
         if len(line) == 0 {
-            assert(len(dependencies) > 0, "%v", line_no)
+            assert(len(must_go_after) > 0, "%v", line_no)
             state = ParsingUpdates
             continue
         }
@@ -56,35 +91,22 @@ func (ThisStructsMethodsAreSolutionFunctions) Solution5_1() {
                 right, err := strconv.Atoi(parts[1])
                 assert(err == nil, "%v", err)
 
-                was := dependencies[left]
-                dependencies[left] = append(was, right)
+                was := must_go_after[left]
+                must_go_after[left] = append(was, right)
 
             case ParsingUpdates:
                 parts := strings.Split(line, ",")
                 assert(len(parts) % 2 == 1, "%v", len(parts))
 
-                valid_update_record := true
-
-                var updates_so_far []int
-            CheckUpdateRecord:
+                var updates_record []int
                 for _, part := range parts {
                     current, err := strconv.Atoi(part)
                     assert(err == nil, "%v: %v", part, err)
 
-                    must_go_after := dependencies[current]
-                    for _, before := range updates_so_far {
-                        if slices.Contains(must_go_after, before) {
-                            valid_update_record = false
-                            break CheckUpdateRecord
-                        }
-                    }
-                    updates_so_far = append(updates_so_far, current)
+                    updates_record = append(updates_record, current)
                 }
 
-                if valid_update_record {
-                    n_updates := len(updates_so_far)
-                    result += updates_so_far[n_updates / 2]
-                }
+                updates_to_be = append(updates_to_be, updates_record)
         }
     }
 
@@ -104,7 +126,10 @@ func (ThisStructsMethodsAreSolutionFunctions) Solution5_1() {
     // monotonically inrceasing clock which never goes back.
     //
     // Golang's `time.Now()` retunrs such monotonic time.
-    fmt.Printf("elapsed %v\n", time.Now().Sub(t0))
+    logf("parsing input took %v", time.Now().Sub(t0))
 
-    fmt.Printf("result: %d\n", result)
+    return PageNumberUpdates{
+        must_go_after: must_go_after,
+        updates_to_be: updates_to_be,
+    }
 }

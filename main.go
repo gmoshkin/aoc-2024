@@ -115,3 +115,25 @@ func logf(format string, args ...any) {
     msg := fmt.Sprintf(format, args...)
     fmt.Printf("[%s:%d] %s\n", filename, line, msg)
 }
+
+// This is a very useful function. It crashes the program if the condition you
+// stated doesn't evaluate to true. Generally assertions are used to express
+// invariants in your program. In this case I use the assertions to make sure
+// the inputs have the expected form, because the later parts of the program
+// depend on this. But in reality you want to handle input parsing errors more
+// gracefully. Assertions are still very useful, however you'll need to get some
+// experience before you start understanding where to put them.
+//
+// Most languages provide a builtin assert, but golang unfortunately doesn't.
+func assert(must_be_true bool, msg string, args ... any) {
+    if must_be_true {
+        return
+    }
+
+    provided_message := fmt.Sprintf(msg, args...)
+
+    _, filename, line, _ := runtime.Caller(1)
+    final_message := fmt.Sprintf("[%s:%d] assertion failed: %s\n", filename, line, provided_message)
+
+    panic(final_message)
+}
